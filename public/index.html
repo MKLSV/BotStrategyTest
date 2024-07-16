@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trading Bot</title>
+    <style>
+        #tradeStatus {
+            margin-top: 20px;
+            padding: 10px;
+            border: 2px solid #000;
+            display: none;
+        }
+        #tradeStatus.active {
+            display: block;
+            background-color: #ffcccc;
+        }
+    </style>
+</head>
+<body>
+    <h1>Trading Bot</h1>
+    <form id="settingsForm">
+        <label for="symbol">Symbol:</label>
+        <input type="text" id="symbol" name="symbol" required>
+        <label for="capital">Initial Capital:</label>
+        <input type="number" id="capital" name="capital" required>
+        <button type="submit">Start</button>
+    </form>
+    <button id="stopButton" style="display:none;">Stop</button>
+    <div id="tradeStatus">Trade is running</div>
+    <div id="trades"></div>
+    <div id="chart"></div>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script>
+        let ws = new WebSocket('ws://localhost:8080');
+
+        document.getElementById('settingsForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            fetch('/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    symbol: document.getElementById('symbol').value,
+                    capital: document.getElementById('capital').value
+                })
+            }).then(response => response.json()).then(data => {
+                document.getElementById('stopButton').style.display = 'block';
+                document.getElementById('settingsForm').style.display = 'none';
+                document.getElementById('tradeStatus').classList.add('active');
+                updateChart();
+                updateTrades();
+            });
+        });
+
+        document.getElementById('stopButton').addEventListener('click', function() {
+            fetch('/stop', {
+                method: 'POST'
+            }).then(response => response.json()).then(data => {
+                document.getElementById('stopButton').style.display = 'none';
+                document.getElementById('settingsForm').style.display = 'block';
+                document.getElementById('tradeStatus').classList.remove('active');
+            });
+        });
+
+        function updateTrades() {
+            fetch('/trades').then(response => response.json()).then(data => {
+                let tradesDiv = document.getElementById('trades');
+                tradesDiv.innerHTML = '';
+                data.forEach(trade => {
+                    let tradeEntry = document.createElement('div');
+                    tradeEntry.innerHTML = `Action: ${trade.action}, Price: ${trade.price.toFixed(2)}, Capital: ${trade.capital.toFixed(2)}, Position: ${trade.position.toFixed(2)}, Short Position: ${trade.shortPosition.toFixed(2)}`;
+                    tradesDiv.appendChild(tradeEntry);
+                });
+            });
+        }
+
+        function updateChart() {
+            fetch('/trades').then(response => response.json()).then(data => {
+                let timestamps = data.map(trade => new Date(trade.timestamp));
+                let prices = data.map(trade => trade.price);
+                let actions = data.map(trade => trade.action);
+
+                let trace = {
+                    x: timestamps,
+                    y: prices,
+                    mode: 'lines+markers',
+                    type: 'scatter',
+                    marker: { color: actions.map(action => action === 'Buy' ? 'green' : (action === 'Sell' ? 'red' : (action === 'Short' ? 'orange' : 'blue'))) },
+                    text: actions,
+                };
+
+                let layout = {
+                    title: 'Trade Actions',
+                    xaxis: { title: 'Timestamp' },
+                    yaxis: { title: 'Price' }
+                };
+
+                Plotly.newPlot('chart', [trace], layout);
+            });
+        }
+
+        ws.onmessage = function(event) {
+            let data = JSON.parse(event.data);
+            if (data.action === 'update') {
+                updateChart();
+                updateTrades();
+            }
+        };
+
+        setInterval(() => {
+            if (document.getElementById('stopButton').style.display === 'block') {
+                ws.send('update');
+            }
+        }, 60000); // Update every minute
+
+    </script>
+</body>
+</html>
