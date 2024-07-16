@@ -70,7 +70,39 @@
     <div id="chart"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <script>
-        let ws = new WebSocket('ws://localhost:8080');
+        let ws;
+
+        function connectWebSocket() {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+            const wsHost = window.location.host;
+            ws = new WebSocket(`${wsProtocol}://${wsHost}/ws`);
+
+            ws.onopen = function() {
+                console.log('WebSocket connection established');
+            };
+
+            ws.onmessage = function(event) {
+                let data = JSON.parse(event.data);
+                if (data.action === 'update') {
+                    document.getElementById('price').innerText = data.price.toFixed(2);
+                    document.getElementById('smaShort').innerText = data.smaShort.toFixed(2);
+                    document.getElementById('smaLong').innerText = data.smaLong.toFixed(2);
+                    document.getElementById('rsi').innerText = data.rsi.toFixed(2);
+                    document.getElementById('atr').innerText = data.atr.toFixed(2);
+                    updateChart();
+                    updateTrades();
+                }
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
+
+            ws.onclose = function() {
+                console.log('WebSocket connection closed. Reconnecting in 5 seconds...');
+                setTimeout(connectWebSocket, 5000);
+            };
+        }
 
         document.getElementById('settingsForm').addEventListener('submit', function(event) {
             event.preventDefault();
@@ -137,18 +169,7 @@
             });
         }
 
-        ws.onmessage = function(event) {
-            let data = JSON.parse(event.data);
-            if (data.action === 'update') {
-                document.getElementById('price').innerText = data.price.toFixed(2);
-                document.getElementById('smaShort').innerText = data.smaShort.toFixed(2);
-                document.getElementById('smaLong').innerText = data.smaLong.toFixed(2);
-                document.getElementById('rsi').innerText = data.rsi.toFixed(2);
-                document.getElementById('atr').innerText = data.atr.toFixed(2);
-                updateChart();
-                updateTrades();
-            }
-        };
+        connectWebSocket();
 
         setInterval(() => {
             if (document.getElementById('stopButton').style.display === 'block') {
