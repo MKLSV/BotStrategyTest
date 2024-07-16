@@ -5,9 +5,9 @@ const axios = require('axios');
 const { SMA, RSI, ATR } = require('technicalindicators');
 
 const app = express();
+const port = process.env.PORT || 3000; // Port provided by Render
 const server = http.createServer(app);
-const wss = new WebSocket.Server({ server });
-const port = process.env.PORT || 3000;
+const wss = new WebSocket.Server({ noServer: true });
 
 let tradeLog = [];
 let capital = 0;
@@ -165,6 +165,12 @@ wss.on('connection', ws => {
         });
       }
     }
+  });
+});
+
+server.on('upgrade', (request, socket, head) => {
+  wss.handleUpgrade(request, socket, head, ws => {
+    wss.emit('connection', ws, request);
   });
 });
 
