@@ -149,9 +149,15 @@ wss.on('connection', ws => {
           if (data.length > 192) data.shift();  // Keep only the last 192 records
           executeTrade();
 
+          const latestData = data[data.length - 1];
+
           ws.send(JSON.stringify({
             action: 'update',
-            data: newRow,
+            price: latestData.close,
+            smaShort: latestData.SMA_Short,
+            smaLong: latestData.SMA_Long,
+            rsi: latestData.RSI,
+            atr: latestData.ATR,
             tradeLog,
           }));
         });
