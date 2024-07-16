@@ -1,0 +1,17 @@
+{
+  "name": "trading-bot",
+  "version": "1.0.0",
+  "description": "A trading bot that tests a strategy in real-time.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "axios": "^0.21.1",
+    "express": "^4.17.1",
+    "technicalindicators": "^2.0.10",
+    "ws": "^7.4.6"
+  },
+  "author": "",
+  "license": "ISC"
+}
