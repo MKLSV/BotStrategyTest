@@ -1,19 +1,13 @@
 const express = require('express');
 const WebSocket = require('ws');
-const https = require('https');
-const fs = require('fs');
+const http = require('http');
 const axios = require('axios');
 const { SMA, RSI, ATR } = require('technicalindicators');
 
-// Замените эти значения на ваши пути к SSL сертификату и ключу
-const server = https.createServer({
-  cert: fs.readFileSync('/path/to/your/cert.pem'),
-  key: fs.readFileSync('/path/to/your/key.pem')
-});
-
 const app = express();
-const port = 3000;
+const server = http.createServer(app);
 const wss = new WebSocket.Server({ server });
+const port = process.env.PORT || 3000;
 
 let tradeLog = [];
 let capital = 0;
@@ -175,5 +169,5 @@ wss.on('connection', ws => {
 });
 
 server.listen(port, () => {
-  console.log(`Server running at https://localhost:${port}`);
+  console.log(`Server running at http://localhost:${port}`);
 });
