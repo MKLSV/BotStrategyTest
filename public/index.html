@@ -15,19 +15,57 @@
             display: block;
             background-color: #ffcccc;
         }
+        #indicatorData, #livePrice {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f0f0;
+        }
+        h1 {
+            text-align: center;
+        }
+        form {
+            margin-bottom: 20px;
+        }
+        #symbol {
+            width: 200px;
+        }
+        button {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
     <h1>Trading Bot</h1>
     <form id="settingsForm">
         <label for="symbol">Symbol:</label>
-        <input type="text" id="symbol" name="symbol" required>
+        <input list="symbols" id="symbol" name="symbol" required>
+        <datalist id="symbols">
+            <option value="BTCUSDT"></option>
+            <option value="ETHUSDT"></option>
+            <option value="SOLUSDT"></option>
+            <option value="BNBUSDT"></option>
+            <!-- Add more options as needed -->
+        </datalist>
         <label for="capital">Initial Capital:</label>
         <input type="number" id="capital" name="capital" required>
         <button type="submit">Start</button>
     </form>
     <button id="stopButton" style="display:none;">Stop</button>
     <div id="tradeStatus">Trade is running</div>
+    <div id="livePrice">Live Price: <span id="price">N/A</span></div>
+    <div id="indicatorData">
+        <h3>Indicator Data</h3>
+        <p>SMA Short (5): <span id="smaShort">N/A</span></p>
+        <p>SMA Long (16): <span id="smaLong">N/A</span></p>
+        <p>RSI (14): <span id="rsi">N/A</span></p>
+        <p>ATR (14): <span id="atr">N/A</span></p>
+    </div>
     <div id="trades"></div>
     <div id="chart"></div>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
@@ -102,6 +140,11 @@
         ws.onmessage = function(event) {
             let data = JSON.parse(event.data);
             if (data.action === 'update') {
+                document.getElementById('price').innerText = data.price.toFixed(2);
+                document.getElementById('smaShort').innerText = data.smaShort.toFixed(2);
+                document.getElementById('smaLong').innerText = data.smaLong.toFixed(2);
+                document.getElementById('rsi').innerText = data.rsi.toFixed(2);
+                document.getElementById('atr').innerText = data.atr.toFixed(2);
                 updateChart();
                 updateTrades();
             }
